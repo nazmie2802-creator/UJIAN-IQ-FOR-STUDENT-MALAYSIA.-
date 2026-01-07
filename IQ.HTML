@@ -1,0 +1,244 @@
+    <!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<title>Know Your IQ in Malaysia V1</title>
+<style>
+body{margin:0;font-family:Arial;background:#e6f2ff;}
+#container{width:100vw;height:100vh;display:flex;justify-content:center;align-items:center;}
+#menu,#quiz,#result,#settings,#rankings{display:none;flex-direction:column;align-items:center;}
+button{padding:10px 20px;margin:5px;font-size:16px;border-radius:6px;cursor:pointer;}
+input,select{padding:6px 10px;margin:5px;font-size:14px;border-radius:4px;}
+#question{margin:20px 0;font-size:18px;text-align:center;}
+#timer{font-size:18px;margin:10px;}
+table{border-collapse:collapse;margin-top:10px;}
+table,th,td{border:1px solid #000;padding:5px;}
+</style>
+</head>
+<body>
+
+<div id="container">
+
+  <!-- Menu Awal -->
+  <div id="menu">
+    <h2>Know Your IQ in Malaysia V1</h2>
+    <button onclick="showStart()">1. Mulakan TES Ujian V1</button>
+    <button onclick="showSettings()">2. Settings</button>
+    <button onclick="showRankings()">3. Rankings</button>
+  </div>
+
+  <!-- Start Form -->
+  <div id="start">
+    <h2>Maklumat Murid</h2>
+    <input type="text" id="name" placeholder="Nama">
+    <input type="text" id="school" placeholder="Sekolah">
+    <input type="text" id="class" placeholder="Kelas">
+    <select id="state">
+      <option value="">Pilih Negeri</option>
+      <option value="Kelantan">Kelantan</option>
+      <option value="Negeri Sembilan">Negeri Sembilan</option>
+      <option value="Wilayah Persekutuan">Wilayah Persekutuan</option>
+      <option value="Johor">Johor</option>
+      <option value="Kedah">Kedah</option>
+    </select>
+    <button onclick="startQuiz()">Mula Ujian</button>
+    <button onclick="backMenu()">Kembali</button>
+  </div>
+
+  <!-- Quiz -->
+  <div id="quiz">
+    <div id="timer">Masa tinggal: 60:00</div>
+    <div id="subject"></div>
+    <div id="question"></div>
+    <input type="text" id="answerInput" placeholder="Taip jawapan di sini">
+    <button onclick="nextQuestion()">Seterusnya</button>
+  </div>
+
+  <!-- Result -->
+  <div id="result">
+    <h2>Hasil Ujian</h2>
+    <p id="iqResult"></p>
+    <p id="commentResult"></p>
+    <p id="jobResult"></p>
+    <button onclick="confirmResult()">Confirm</button>
+  </div>
+
+  <!-- Settings -->
+  <div id="settings">
+    <h2>Settings</h2>
+    <label>Pilih Bahasa:</label>
+    <select id="language">
+      <option value="Baku">Bahasa Melayu Baku</option>
+      <option value="Standard">Bahasa Melayu Standard</option>
+    </select>
+    <button onclick="backMenu()">Kembali</button>
+  </div>
+
+  <!-- Rankings -->
+  <div id="rankings">
+    <h2>Ranking Murid</h2>
+    <table id="rankingTable">
+      <tr><th>Nama</th><th>Sekolah</th><th>Kelas</th><th>Negeri</th><th>Markah</th><th>IQ</th><th>Cadangan Kerja</th></tr>
+    </table>
+    <button onclick="backMenu()">Kembali</button>
+  </div>
+
+</div>
+
+<script>
+// Subjects & Questions
+const subjects=[
+  {name:"Sejarah Malaysia",questions:[
+    "Bila Malaysia merdeka?",
+    "Siapakah Perdana Menteri pertama Malaysia?",
+    "Apakah Tragedi Bukit Selambau?",
+    "Siapakah pahlawan terkenal Malaysia?",
+    "Peristiwa penting dalam sejarah Malaysia abad ke-20?"
+  ]},
+  {name:"Matematik",questions:["12 + 8 = ?","15 x 2 = ?","100 - 45 = ?","20 ÷ 4 = ?","5^2 = ?"]},
+  {name:"BM",questions:["Eja perkataan 'Kucing'","Sinonim untuk 'Cantik'?","Bentuk jamak 'Buku'?","Lengkapkan ayat: Saya ___ ke sekolah","Perkataan lawan bagi 'Besar'?"]},
+  {name:"Sains",questions:["Benda hidup buat oksigen","Planet ke-3 dari Matahari?","Apakah graviti?","Cecair + gas = ?","Organ utama untuk bernafas?"]},
+  {name:"RBT",questions:["Lukis sebuah tiang (taip 'selesai')","Lukis rumah","Lukis kereta","Lukis pokok","Lukis jambatan"]},
+  {name:"Pendidikan Islam",questions:["Siapakah Nabi terakhir?","Bila Isra Mikraj berlaku?","Apa maksud Islam?","Apakah rukun Islam pertama?","Nama kitab suci umat Islam?"]}
+];
+
+let currentSubjectIndex=0,currentQuestionIndex=0,score=0;
+let student={};
+let countdown;
+let timeLeft=3600; // 1 jam = 3600 saat
+let rankings=[];
+
+// Show menu
+document.getElementById("menu").style.display="flex";
+function backMenu(){
+  hideAll();
+  document.getElementById("menu").style.display="flex";
+}
+
+function showStart(){
+  hideAll();
+  document.getElementById("start").style.display="flex";
+}
+function showSettings(){
+  hideAll();
+  document.getElementById("settings").style.display="flex";
+}
+function showRankings(){
+  hideAll();
+  document.getElementById("rankings").style.display="flex";
+  updateRankingTable();
+}
+
+function hideAll(){
+  document.getElementById("menu").style.display="none";
+  document.getElementById("start").style.display="none";
+  document.getElementById("quiz").style.display="none";
+  document.getElementById("result").style.display="none";
+  document.getElementById("settings").style.display="none";
+  document.getElementById("rankings").style.display="none";
+}
+
+// Start quiz
+function startQuiz(){
+  student={
+    name:document.getElementById("name").value,
+    school:document.getElementById("school").value,
+    class:document.getElementById("class").value,
+    state:document.getElementById("state").value
+  };
+  if(!student.name||!student.school||!student.class||!student.state){alert("Sila isi semua maklumat");return;}
+  hideAll();
+  document.getElementById("quiz").style.display="flex";
+  currentSubjectIndex=0;
+  currentQuestionIndex=0;
+  score=0;
+  timeLeft=3600;
+  showQuestion();
+  startTimer();
+}
+
+function showQuestion(){
+  const sub=subjects[currentSubjectIndex];
+  document.getElementById("subject").textContent="Mata Pelajaran: "+sub.name;
+  document.getElementById("question").textContent=sub.questions[currentQuestionIndex];
+  document.getElementById("answerInput").value="";
+}
+
+function nextQuestion(){
+  const ans=document.getElementById("answerInput").value.trim();
+  if(ans!=="") score+=10;
+  currentQuestionIndex++;
+  if(currentQuestionIndex<subjects[currentSubjectIndex].questions.length){
+    showQuestion();
+  }else{
+    currentQuestionIndex=0;
+    currentSubjectIndex++;
+    if(currentSubjectIndex<subjects.length){
+      showQuestion();
+    }else{
+      endQuiz();
+    }
+  }
+}
+
+function startTimer(){
+  clearInterval(countdown);
+  countdown=setInterval(()=>{
+    timeLeft--;
+    let min=Math.floor(timeLeft/60);
+    let sec=timeLeft%60;
+    document.getElementById("timer").textContent=`Masa tinggal: ${min}:${sec<10?'0'+sec:sec}`;
+    if(timeLeft<=0){
+      clearInterval(countdown);
+      endQuiz();
+    }
+  },1000);
+}
+
+function endQuiz(){
+  clearInterval(countdown);
+  hideAll();
+  document.getElementById("result").style.display="flex";
+  // IQ
+  const iq=Math.min(50+score*2,200);
+  student.score=score;
+  student.iq=Math.round(iq);
+  // Komen
+  let comment="";
+  if(score>=250) comment="Cemerlang!";
+  else if(score>=180) comment="Baik";
+  else if(score>=100) comment="Biasa";
+  else comment="Bodoh sikit 😅";
+  student.comment=comment;
+  document.getElementById("iqResult").textContent=`IQ anggaran: ${student.iq}`;
+  document.getElementById("commentResult").textContent=comment;
+  // Cadangan pekerjaan
+  let job="";
+  if(score>=250) job="Doktor / Jurutera / Saintis";
+  else if(score>=180) job="Cikgu / Akauntan / Juruteknik";
+  else if(score>=100) job="Kerani / Pembantu";
+  else job="Kerja ringan / perlukan usaha";
+  student.job=job;
+  document.getElementById("jobResult").textContent="Cadangan pekerjaan: "+job;
+}
+
+function confirmResult(){
+  rankings.push({...student});
+  alert("Hasil disimpan dalam ranking!");
+  backMenu();
+}
+
+function updateRankingTable(){
+  const table=document.getElementById("rankingTable");
+  // clear existing except header
+  table.innerHTML='<tr><th>Nama</th><th>Sekolah</th><th>Kelas</th><th>Negeri</th><th>Markah</th><th>IQ</th><th>Cadangan Kerja</th></tr>';
+  rankings.forEach(r=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${r.name}</td><td>${r.school}</td><td>${r.class}</td><td>${r.state}</td><td>${r.score}</td><td>${r.iq}</td><td>${r.job}</td>`;
+    table.appendChild(tr);
+  });
+}
+</script>
+
+</body>
+</html>
