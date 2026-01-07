@@ -1,0 +1,2 @@
+# UJIAN-IQ-FOR-STUDENT-MALAYSIA.-
+Dibuat Oleh Ammar Iman
